@@ -1,0 +1,1123 @@
+#!/bin/bash
+alias genpasswd="strings /dev/urandom | grep -o '[[:alnum:]]' | head -n 10 | tr -d '\n'; echo"
+alias cputemp='sensors | grep Core'
+function test_cond() {
+local ADDR=$1
+local PORT=$2
+local PROT=${3:-tcp}
+(echo "" > /dev/${PROT}/${ADDR}/${PORT}) 2>/dev/null;test $? -eq 0 && echo ${ADDR};
+}
+
+function locate_vm-ware() {
+NET=$1
+echo ${NET}.{1..254} | tr " " "\n" | parallel -j254 'echo "" | nc {} 427 >>/dev/null 2>&1 ;test $? -eq 0 && echo {}'
+#seq 1 254 | parallel -j254 'echo "" | nc $NET.{} 427 >>/dev/null 2>&1 ;test $? -eq 0 && echo $NET.{}'
+}
+function locate_vnc() {
+NET=$1
+echo ${NET}.{1..254} | tr " " "\n" | parallel -j254 'echo "" | nc {} 5900 >>/dev/null 2>&1 ;test $? -eq 0 && echo {}'
+echo ${NET}.{1..254} | tr " " "\n" | parallel -j254 'echo "" | nc {} 5901 >>/dev/null 2>&1 ;test $? -eq 0 && echo {}'
+#seq 1 254 | parallel -j254 'echo "" | nc $NET.{} 427 >>/dev/null 2>&1 ;test $? -eq 0 && echo $NET.{}'
+}
+
+function locate_cim() {
+NET=$1
+echo ${NET}.{1..254} | tr " " "\n" | parallel -j254 'echo "" | nc {} 5989 >>/dev/null 2>&1 ;test $? -eq 0 && echo {}'
+}
+
+
+function wbem_file_scan() {
+NET=$1
+cat ${NET} | parallel -j254 'echo "" | nc {} 5988 >>/dev/null 2>&1 ;test $? -eq 0 && echo {}'
+}
+
+function locate_xen() {
+NET=$1
+#echo ${NET}.{1..254} | tr " " "\n" | parallel -j254 'echo "" | nc {} 631 >>/dev/null 2>&1 ;test $? -eq 0 && echo {}'
+#wget -O - http://{} 2>&1| grep -qi Xencenter 
+echo ${NET}.{1..254} | tr " " "\n" | parallel -j254 'wget -O - http://{} 2>&1| grep -qi Xencenter ;test $? -eq 0 && echo {}'
+#seq 1 254 | parallel -j254 'echo "" | nc $NET.{} 427 >>/dev/null 2>&1 ;test $? -eq 0 && echo $NET.{}'
+}
+function locate_httpd() {
+NET=$1
+echo ${NET}.{1..254} | tr " " "\n" | parallel -j254 'echo "" | nc {} 443 >>/dev/null 2>&1 ;test $? -eq 0 && echo {}'
+#seq 1 254 | parallel -j254 'echo "" | nc $NET.{} 427 >>/dev/null 2>&1 ;test $? -eq 0 && echo $NET.{}'
+}
+
+function mdb() {
+mysql --host=10.23.98.202 --user=psf --password=En14 --skip-secure-auth agencourt_import -e "$@" 2>/dev/null || \
+echo fail 1 "MDB: Failed during SQL execution of '$@'.  Get help.";
+return 0;
+}
+
+
+function locate_openfiler() {
+NET=$1
+echo ${NET}.{1..254} | tr " " "\n" | parallel -j254 'echo "" | nc {} 446 >>/dev/null 2>&1 ;test $? -eq 0 && echo {}'
+#seq 1 254 | parallel -j254 'echo "" | nc $NET.{} 427 >>/dev/null 2>&1 ;test $? -eq 0 && echo $NET.{}'
+}
+function locate_vm-ware1() {
+NET=$1
+echo ${NET}.{1..254} | tr " " "\n" | parallel -j254 'test_cond {}'
+#seq 1 254 | parallel -j254 'echo "" | nc $NET.{} 427 >>/dev/null 2>&1 ;test $? -eq 0 && echo $NET.{}'
+}
+
+function locate_xen1() {
+NET=$1
+echo ${NET}.{1..254} | tr " " "\n" | parallel -j254 'test_cond {}'
+#seq 1 254 | parallel -j254 'echo "" | nc $NET.{} 631 >>/dev/null 2>&1 ;test $? -eq 0 && echo $NET.{}'
+}
+function apache-vulnerablity() {
+echo "add the following to vhost.conf"
+echo "TRACE XSS attack"
+#echo "RewriteEngine on
+#RewriteCond %{REQUEST_METHOD} ^(TRACE|TRACK)
+#RewriteRule .* - [F]"
+}
+
+function time-stamp-disable()  {
+sed -i /^"net.ipv4.tcp_timestamps"/d /etc/sysctl.conf
+echo "Disable TCP timestamps on Linux"
+echo "net.ipv4.tcp_timestamps = 0" >> /etc/sysctl.conf
+iptables -A INPUT -p icmp --icmp-type timestamp-request -j DROP
+iptables -A OUTPUT -p icmp --icmp-type timestamp-reply -j DROP
+sysctl -p
+}
+
+function network_sweep() {
+NET=$1
+echo ${NET}.{1..254} | tr " " "\n" | parallel -j254 'ping -c 1 {} >>/dev/null 2>&1 ;test $? -eq 0 && echo {}'
+}
+
+function locate_windows() {
+NET=$1
+echo ${NET}.{1..254} | tr " " "\n" | parallel -j254 'echo "" | nc {} 135 >>/dev/null 2>&1 ;test $? -eq 0 && echo {}'
+}
+function locate_linux() {
+NET=$1
+echo ${NET}.{1..254} | tr " " "\n" | parallel -j254 'echo "" | nc {} 22 >>/dev/null 2>&1 ;test $? -eq 0 && echo {}'
+}
+function parallel_load() {
+set -x
+NETW=$1
+PORT=$2
+echo ${NETW}.{1..254} | sed s/" "/"\\t${PORT}\\n"/g | parallel -j254 'echo "" | nc {} >>/dev/null 2>&1 ;test $? -eq 0 && echo {} '
+}
+function locate_telnet() {
+NET=$1
+echo ${NET}.{1..254} | tr " " "\n" | parallel -j254 'echo "" | nc 192.168.6.{} 23 >>/dev/null 2>&1 ;test $? -eq 0 && echo {}'
+}
+
+function check_shellshock() {
+
+env x='() { :;}; echo vulnerable' bash -c 'echo hello'
+
+}
+function aclSet() {
+
+# We set the ACL OR we fail 
+# We use 'root' by necessity
+# (   set -x; 
+# sudo -u root setfacl --recursive -m "$1" "$2" ) || \
+	fail 1 "Cannot set ACL '$1' on target '$2'. Exit code '$?'.  Get help."
+}
+
+function lamp() {
+yum install php php-mysql php-pdo php-gd php-mbstring
+yum info httpd;
+yum info mysql-server;
+yum info php;
+rpm -Uvh http://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm
+}
+
+function essential() {
+yum install wget -y;
+yum install screen -y;
+yum install lsof -y;
+}
+
+function install_qmail() {
+wget http://qmr.madkom.pl/downloads/qmailrocks.tar.gz
+}
+
+function shell() {
+env VAR='() { :;}; echo Bash is vulnerable!' bash -c "echo Bash Test"
+}
+
+function sajan_quasar() {
+#Main function.
+set -x
+DATE=$(date +%m%d%Y)
+
+/usr/bin/Xvfb :99 -screen 0 1024x768x16 &     
+export DISPLAY=:99  || fail 1 "Unable to export Display Variable"
+cd /home/user/quasar/ || fail 1 "Unable to get to script directory"
+ant run &&
+
+PROJECT_ID="$(cat /home/user/logs/current-id.txt | cut -d ":" -f 2)"
+DELIVERY_ID="$(cat /home/user/logs/current-id.txt | cut -d ":" -f 1)"
+result="$(mdb "select REPLACE(name, ' ', '_') as name,user_id from project_delivery_job where project_id = $PROJECT_ID and delivery_id = $DELIVERY_ID \G")"
+USER_ID="$(echo "$result" | awk '/user_id:/{print $2}')"
+PROJECT_NAME="$(echo "$result" | awk '/name:/{print $2}')"
+FILENAME="${PROJECT_NAME}_${DATE}"
+
+result="$(mdb "select * from users where user_id = $USER_ID\G")"
+HOMEDIR="$(echo "$result" | awk '/homedir:/{print $2}')"
+USERNAME="$(echo "$result" | awk '/username:/{print $2}')"
+LASTNAME="$(echo "$result" | awk '/last_name:/{print $2}')"
+FIRSTNAME="$(echo "$result" | awk '/first_name:/{print $2}')"
+EMAIL="$(echo "$result" | awk '/email:/{print $2}')"
+sleep 60
+
+expect -c "spawn ssh rasim@10.20.0.40 \"ls /home/ftpmaster/ftp/rasim/${FILENAME}.*\" ;set timeout 180;expect password: {send password\r};" || \
+	fail 1 "File not found"
+	#ssh sfranco@10.20.0.40 "ls /home/ftpmaster/ftp.agencourt.com/SFRANCO/${FILENAME}.*" || fail 1 "File not found"
+	echo "Success"
+	mdb "UPDATE project_delivery_job SET package_complete = TRUE,end_date = now() WHERE project_id = $PROJECT_ID and delivery_id = $DELIVERY_ID"
+	pkill Xvfb
+	set +x
+###################################################################################################
+PROJECT_ID="$(cat /home/user/quasar/logs/current-id.txt)"
+result="$(mdb "select name,user_id from projects_temp where project_id = $PROJECT_ID\G")"
+USER_ID="$(echo "$result" | awk '/user_id:/{print $2}')"
+PROJECT_NAME="$(echo "$result" | awk '/name:/{print $2}')"
+DATE=$(date +%m%d%Y)
+FILENAME="${PROJECT_NAME}_${DATE}.tar.gz"
+
+#/usr/bin/Xvfb :99 -screen 0 1024x768x16 &     
+#export DISPLAY=:99
+#cd /home/user/quasar/
+#ant run && 
+result="$(mdb "select * from users where user_id = $USER_ID\G")"
+HOMEDIR="$(echo "$result" | awk '/homedir:/{print $2}')"
+USERNAME="$(echo "$result" | awk '/username:/{print $2}')"
+LASTNAME="$(echo "$result" | awk '/last_name:/{print $2}')"
+FIRSTNAME="$(echo "$result" | awk '/first_name:/{print $2}')"
+EMAIL="$(echo "$result" | awk '/email:/{print $2}')"
+
+ssh rasim@super.com 'ls /home/ftpmaster/ftp.agen.com/SRASIM/92015.tar.gz' || \
+	fail 1 "File not found"
+	echo "Success"
+	#mdb "UPDATE projects_temp SET packaging_complete = TRUE WHERE project_id = $PROJECT_ID"
+	#pkill Xvfb
+}
+
+
+function locate_linux() {
+NET=$1
+echo ${NET}.{1..254} | tr " " "\n" | parallel -j254 'echo "" | nc {} 22 >>/dev/null 2>&1 ;test $? -eq 0 && echo {}'
+#seq 1 254 | parallel -j254 'echo "" | nc 192.168.6.{} 22 >>/dev/null 2>&1 ;test $? -eq 0 && echo 192.168.6.{}'
+}
+
+function repos() {
+wget http://rpms.famillecollet.com/enterprise/remi.repo
+rpm -Uvh http://mirror.webtatic.com/yum/el6/latest.rpm
+}
+
+function webmin-install() {
+http://prdownloads.sourceforge.net/webadmin/webmin-1.720-1.noarch.rpm 
+}
+
+function lvm-rescue() {
+lvm vgscan -v
+lvm vgchange -a y
+lvm lvs –all
+mount /dev/mapper/VolGroup00-LogVolRoot  /mnt/mountpoint 
+}
+
+function php-mail() {
+cat<<'EOF'
+<?php
+	$grep = '';
+	$grep = shell_exec('whois discountcoffeedirect.co.uk | grep SUSPENDED');
+	if(!$grep)
+	{
+		$to = "domains@thewebclinic.co.uk";
+		$subject = "discountcoffeedirect.co.uk is available";
+		$txt = "discountcoffeedirect.co.uk is available. Please request Rasim to register it.";
+		$headers = "From: admin@thewebclinic.co.uk" . "\r\n";
+		mail($to,$subject,$txt,$headers);
+																
+	}
+?>
+EOF
+}
+function SIOCSIFADDR() {
+cat<<'EOF'
+remove the /etc/udev/rules.d/70-persistent-net.rules
+EOF
+}
+
+function fail() { 
+exit_value="$1";  shift; 
+#message $@; 
+exit $exit_value; 
+[[ "$0" != "-bash" ]] && [[ $SHLVL > 1 ]] && exit $exit_value; 
+}
+
+function selinux() {
+getenforce
+setenforce 1
+#sed -i 's/\(^SELINUX=\).*/\SELINUX=disabled/' /etc/sysconfig/selinux
+sed -i 's/\(^SELINUX=\).*/\SELINUX=disabled/' /etc/selinux/config
+#sed -i s/SELINUX=enforcing/SELINUX=disabled/g /etc/selinux/config
+}
+
+function stopiptables() {
+chkconfig --level 0123456 iptables off
+service iptables stop
+}
+function getip() {
+/sbin/ifconfig eth0 | grep "inet addr" | awk '{print $2}' | sed 's/[:a-zA-Z]//g'
+}
+function cachelinks() {
+cat<<'EOF'
+https://openconcept.ca/blog/mmallett/apc-varnish-memcache-and-caching-beyond-drupal-core
+EOF
+}
+function apache_trace() {
+cat<<'EOF'
+http://serverfault.com/questions/322671/long-waiting-times-before-apache-2-2-server-response-gentoo-lamp"
+mkdir /strace; ps auxw | grep httpd | awk '{print"-p " $2}' | xargs strace -o /strace/strace.log -ff -s4096 -r
+for i in `ls /strace/*`; do echo $i; cat $i | cut -c11-17 | sort -rn | head; done
+EOF
+}
+function PBX-links() {
+cat<<'EOF'
+http://www.modulo.ro/voip-articles-and-tutorials/determine-the-maximum-capacity-of-an-asterisk-pbx
+http://wiki.freepbx.org/display/HTGS/Installing+FreePBX+12+on+CentOS+6.5
+https://www.linode.com/docs/applications/voip/deploy-voip-services-with-asterisk-and-freepbx-on-ubuntu-12-04-precise
+http://wiki.freepbx.org/display/L1/amportal+commands
+https://wiki.asterisk.org/wiki/display/AST/Pattern+Matching
+http://yum.freepbxdistro.org/shmz-os/6.5/extras/i386/Packages/
+http://www.venturevoip.com/news.php?rssid=2184
+http://tyler.anairo.com/guides/how-to-set-up-sip-trunk-using-freepbx
+EOF
+}
+function bshopticket() {
+echo "$(date +%F)-$@" >> /home/rasim/Projects/bshop-reports/$(date +%F).txt
+}
+function client-reports() {
+echo "$(date +%F)-$@" >> /home/rasim/Projects/client-reports/$(date +%F).txt
+}
+function test_xargs() {
+echo 192.168.6.{1..254} | tr " " "\n" | xargs -I '{}' -n 1 -P 254 test_cond '{}' 22
+}
+function hp_printer() {
+ sudo apt-get install hplip-gui
+ sudo hp-check -r
+ sudo hp-setup
+ }
+function extract() { 
+    if [ -f $1 ] ; then 
+      case $1 in 
+        *.tar.bz2)   tar xjf $1     ;; 
+        *.tar.gz)    tar xzf $1     ;; 
+        *.bz2)       bunzip2 $1     ;; 
+        *.rar)       unrar e $1     ;; 
+        *.gz)        gunzip $1      ;; 
+        *.tar)       tar xf $1      ;; 
+        *.tbz2)      tar xjf $1     ;; 
+        *.tgz)       tar xzf $1     ;; 
+        *.zip)       unzip $1       ;; 
+        *.Z)         uncompress $1  ;; 
+        *.7z)        7z x $1        ;;
+        *)     echo "'$1' cannot be extracted via extract()" ;; 
+         esac 
+     else 
+         echo "'$1' is not a valid file" 
+     fi 
+}
+
+function myinfo () {
+  printf "CPU: "
+  cat /proc/cpuinfo | grep "model name" | head -1 | awk '{ for (i = 4; i <= NF; i++) printf "%s ", $i }'
+  printf "\n"
+
+  cat /etc/issue | awk '{ printf "OS: %s %s %s %s | " , $1 , $2 , $3 , $4 }'
+  uname -a | awk '{ printf "Kernel: %s " , $3 }'
+  uname -m | awk '{ printf "%s | " , $1 }'
+  printf "\nRAM INFO:\n"
+  free -m
+  #kded4 --version | grep "KDE Development Platform" | awk '{ printf "KDE: %s", $4 }'
+  printf "\n"
+  uptime | awk '{ printf "Uptime: %s %s %s", $3, $4, $5 }' | sed 's/,//g'
+  printf "\n"
+  cputemp | head -1 | awk '{ printf "%s %s %s\n", $1, $2, $3 }'
+  cputemp | tail -1 | awk '{ printf "%s %s %s\n", $1, $2, $3 }'
+  cputemp | awk '{ printf "%s %s", $1, $2 }'
+}
+function disk_info() {
+#!/bin/bash
+local IP=$(getip)
+for i in $(df -h | grep -v Use | awk '{print $5}'| cut -f 1 -d %)
+do if [[ $i -gt 85 ]];then 
+echo -e "`date`\n"server space in critical condition"\n`df -h`" 
+#echo -e "`date`\n"server space in critical condition"\n`df -h`" | mail -s "$(hostname)-$IP size details"  rasimuddin.vs@calpinetech.com 
+fi
+done
+}
+
+function reboot_info() {
+last reboot
+}
+function mx_get() {
+for i in $(host -t MX $1 | awk '{print $7}')
+do
+host -t A $i
+done
+}
+function ntpdate_commands() {
+ntpdate -s time.nist.gov
+ntpq -p
+}
+
+function tester() {
+echo 192.168.6.{1..254} | tr " " "\n" | xargs -I '{}' -n 1 -P 254 test_cond '{}' 22
+}
+
+function backup_mysql_files() {
+local HOST=$1
+local USER=$2
+local PASS=$3
+local DEST=$4
+local D_BASE=$5
+local IP=$(getip)
+mount | egrep -qw  Backup
+if [[ $? -ne 0 ]];then 
+mount -t cifs //192.168.1.238/Backup /mnt/cifs -o username=kneipp,password=fasim*123 || \
+        {(echo "Backup in ${IP} failed" | mail -s "Backup in ${IP} Failed" rasimuddinvs@gmail.com
+         );exit 1;}
+fi
+mkdir -pv /mnt/cifs/${IP}/weekly/database
+mkdir -pv /mnt/cifs/${IP}/weekly/files
+mkdir -pv /mnt/cifs/${IP}/daily/database
+mkdir -pv /mnt/cifs/${IP}/daily/files
+[[ $(date  | awk '{print $1}') == "Sun" ]] && \
+(
+	rsync -avz --delete --log-file=/var/log/rsync-kneipp.log \
+	/var/www/html/ /mnt/cifs/${IP}/weekly/files/ 
+	if [[ $? == 0 ]]; then
+	STATUS_1="COMPLETED Weekly RSYNC for ${IP}"
+	else
+	STATUS_1="WEEKLY RSYNC FAILED for ${IP}"
+	fi
+	mysqldump -u $USER -p${PASS} ${D_BASE} > /mnt/cifs/${IP}/weekly/database/${D_BASE}-$(date +%F-T%H).sql
+	if [[ $? == 0 ]]; then
+	STATUS_2="WEEKLY MySQL DB-BACKUP for ${IP} COMPLEATED"
+	else
+	STATUS_2="WEEKLY MySQL BACKUPFAILED for ${IP}"
+	fi
+        find /mnt/cifs/${IP}/daily/database/ -type f -mtime +3 -delete
+        echo -e "`date`\n01 = $STATUS_1 \n02 = $STATUS_2 \n" | mail -s "WEEKLY BACKUP for SERVER ${IP} " rasimuddinvs@gmail.com
+)
+	rsync -avz --delete --log-file=/var/log/rsync-kneipp.log \
+	/var/www/html/ /mnt/cifs/${IP}/daily/files/ 
+	if [[ $? == 0 ]]; then
+	STATUS_1="COMPLETED DAILY RSYNC for ${IP}"
+	else
+	STATUS_1="DAILY RSYNC FAILED for ${IP}"
+	fi
+	mysqldump -u $USER -p${PASS} ${D_BASE} > /mnt/cifs/${IP}/daily/database${D_BASE}-$(date +%F-T%H).sql
+	if [[ $? == 0 ]]; then
+	STATUS_2="DAILY MySQL DB-BACKUP for ${IP} COMPLEATED"
+	else
+	STATUS_2="DAILY MySQL BACKUP FAILED for ${IP}"
+	fi
+        echo -e "`date`\n01 = $STATUS_1 \n02 = $STATUS_2 \n" | mail -s "DAILY BACKUP for SERVER ${IP} " rasimuddinvs@gmail.com
+find /mnt/cifs/${IP}/weekly/database/ -type f -mtime +2 -delete
+umount /mnt/cifs
+}
+
+function wan_ip() {
+echo -e "WAN IP IS:"
+wget -qO- http://ipecho.net/plain ; echo
+}
+function backup_calpine() {
+## MySQL
+rsync -avzop --progress --stats --delete --log-file="/root/Scripts/logs/backupinfopark.log" -e "ssh" root@192.168.6.4:/var/lib/mysql/ /mnt/vg1/uvjstorage1/infoparkbackup/mysql/
+
+if [[ $? == 0 ]]; then
+STATUS_1="COMPLETED MySQL RSYNC"
+else
+STATUS_1="MySQL RSYNC FAILED"
+fi
+
+## vhosts
+rsync -avzop --progress --stats --delete  --log-file="/root/Scripts/logs/backupinfopark.log" -e "ssh" root@198.11.230.43:/home/ /mnt/vg1/uvjstorage1/infoparkbackup/home/
+
+if [[ $? == 0 ]]; then
+STATUS_2="COMPLETED vhosts RSYNC"
+else
+STATUS_2="vhosts RSYNC FAILED"
+fi
+
+echo -e "`date`\n01 = $STATUS_1 \n02 = $STATUS_2 \n" | mail -s "BACKUP of infopark SERVER" ithelp@domain.com
+}
+
+function aclSet() {
+# We set the ACL OR we fail
+# We use 'root' by necessity
+#$1= g:root:rwx $2=folder
+(   set -x;  
+    sudo -u root setfacl --recursive -m "$1" "$2" ) || \ 
+    fail 1 "Cannot set ACL '$1' on target '$2'. Exit code '$?'.  Get help."
+}
+function pxe_boot_install() {
+cat <<'EOF'
+http://www.tecmint.com/configure-pxe-server-to-install-windows-on-centos/
+EOF
+}
+function nfs_server_install() {
+sudo apt-get install nfs-kernel-server
+# On client
+sudo apt-get install nfs-common
+yum install nfs-utils
+cat <<'EOF'
+edit /etc/exports with the following format
+sharename	<IP/Network>(share)
+After setting up /etc/exports, export the shares:
+sudo exportfs -ra
+You'll want to do this command whenever /etc/exports is modified.
+Restart Services
+By default, portmap only binds to the loopback interface. To enable access to portmap from remote machines, 
+you need to change /etc/default/portmap to get rid of either "-l" or "-i 127.0.0.1".
+If /etc/default/portmap was changed, portmap will need to be restarted: 
+EOF
+}
+
+function rsync_db() {
+DEST=$1
+shift 1
+USER=root
+PASS=star*rasim
+D_BASES="$@"
+IP=$(getip)
+mount | egrep -qw  Backup
+if [[ $? -ne 0 ]];then 
+mount -t nfs ${DEST}:/Raid_Mount/Backup /mnt/nfs  || \
+        {(echo "Backup in ${IP} failed" | mail -s "Backup in ${IP} Failed" rasimuddinvs@gmail.com
+         );exit 1;}
+fi
+mkdir -pv /mnt/nfs/${IP}/weekly/database
+mkdir -pv /mnt/nfs/${IP}/weekly/files
+mkdir -pv /mnt/nfs/${IP}/daily/database
+mkdir -pv /mnt/nfs/${IP}/daily/files
+[[ $(date  | awk '{print $1}') == "Sun" ]] && \
+(
+	rsync -avz --delete --log-file=/var/log/rsync-kneipp.log \
+	/var/www/ /mnt/nfs/${IP}/weekly/files/ 
+	if [[ $? == 0 ]]; then
+	STATUS_1="COMPLETED Weekly RSYNC for ${IP}"
+	else
+	STATUS_1="WEEKLY RSYNC FAILED for ${IP}"
+	fi
+	for i in $(echo $D_BASES)
+	do
+	(mysqldump -u $USER -p${PASS} $i > /mnt/nfs/${IP}/weekly/database/$i-$(date +%F-%H).sql)
+        done
+	if [[ $? == 0 ]]; then
+	STATUS_2="WEEKLY MySQL DB-BACKUP for ${IP} COMPLEATED"
+	else
+	STATUS_2="WEEKLY MySQL BACKUPFAILED for ${IP}"
+	fi
+        find /mnt/nfs/${IP}/daily/database/ -type f -mtime +3 -delete
+        echo -e "`date`\n01 = $STATUS_1 \n02 = $STATUS_2 \n" | mail -s "WEEKLY BACKUP for SERVER ${IP} " rasimuddinvs@gmail.com
+)
+	rsync -avz --delete --log-file=/var/log/rsync-kneipp.log \
+	/var/www/ /mnt/nfs/${IP}/daily/files/ 
+	if [[ $? == 0 ]]; then
+	STATUS_1="COMPLETED DAILY RSYNC for ${IP}"
+	else
+	STATUS_1="DAILY RSYNC FAILED for ${IP}"
+	fi
+	for i in $(echo $D_BASES)
+	do
+	(mysqldump -u $USER -p${PASS} $i > /mnt/nfs/${IP}/weekly/database/$i-$(date +%F-%H).sql)
+        done
+	if [[ $? == 0 ]]; then
+	STATUS_2="DAILY MySQL DB-BACKUP for ${IP} COMPLEATED"
+	else
+	STATUS_2="DAILY MySQL BACKUP FAILED for ${IP}"
+	fi
+        echo -e "`date`\n01 = $STATUS_1 \n02 = $STATUS_2 \n" | mail -s "DAILY BACKUP for SERVER ${IP} " rasimuddinvs@gmail.com
+find /mnt/nfs/${IP}/weekly/database/ -type f -mtime +2 -delete
+umount /mnt/nfs
+}
+
+function mysql_password_reset() {
+/etc/init.d/mysqld stop
+mysqld_safe --skip-grant-tables &
+mysql -u root -e "update user set password=PASSWORD("rasim@123") where User='root';"
+mysql -u root -e "flush privileges;"
+}
+function locate_dhcp() {
+NET=$1
+echo ${NET}.{1..254} | tr " " "\n" | parallel -j254 'echo "" | nc {} 427 >>/dev/null 2>&1 ;test $? -eq 0 && echo {}'
+#seq 1 254 | parallel -j254 'echo "" | nc $NET.{} 427 >>/dev/null 2>&1 ;test $? -eq 0 && echo $NET.{}'
+}
+
+function docker_bridge_install() {
+
+sudo service docker stop
+ifconfig
+ip link set dev docker0 down
+ifconfig
+sudo brctl delbr docker0
+apt-get install bridge-utils -y
+ifconfig
+sudo brctl delbr docker0
+sudo iptables -t nat -F POSTROUTING
+sudo brctl addbr bridge0
+sudo ip addr add 192.168.6.1/24 dev bridge0
+sudo ip link set dev bridge0 up
+ip addr show bridge0
+echo 'DOCKER_OPTS="-b=bridge0"' >> /etc/default/docker
+sudo service docker start
+sudo iptables -t nat -L -n
+iptables-save
+}
+
+function upload_fun() {
+scp -i /home/rasim/logins/vps-usony-techno/softlayer.key /home/rasimcalpine/rasim_bashrc root@198.11.233.43:/usr/local/apache/htdocs/toolR32/fun
+}
+
+function netportcheck() {
+netstat -tunap | grep LISTEN
+}
+
+function current_time() {
+echo "World Time:"
+curl -s --head http://google.com | grep ^Date: | sed 's/Date: //g'
+echo "Server Time Zone:"
+date -d "$(curl -s --head http://google.com | grep ^Date: | sed 's/Date: //g')"
+echo "Server Time:"
+date
+}
+
+function time_adjust() {
+date -s "$(curl -s --head http://google.com | grep ^Date: | sed 's/Date: //g')"
+
+}
+
+function java_home_select() {
+echo "" | alternatives --config java
+echo -e "\nJAVA_BIN PATHS:"
+dirname $(echo "" | alternatives --config java | grep bin | awk '{print $3}')
+echo "JAVA_HOME PATHS:"
+dirname $(dirname $(echo "" | alternatives --config java | grep bin | awk '{print $3}'))
+cat<<'EOF'
+Append the binary paths to /etc/profile or /etc/bashrc with the below
+command
+export PATH=$PATH:
+EOF
+
+}
+
+function java_installation() {
+cat<<'EOF'
+#cd /opt
+# wget --no-cookies --no-check-certificate --header "Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com%2F; oraclelicense=accept-securebackup-cookie" "http://download.oracle.com/otn-pub/java/jdk/7u79-b15/jdk-7u79-linux-x64.tar.gz"
+# cd /opt/jdk1.7.0_79/
+# alternatives --install /usr/bin/java java /opt/jdk1.7.0_79/bin/java 2
+# alternatives --config java
+# alternatives --install /usr/bin/jar jar /opt/jdk1.7.0_79/bin/jar 2
+# alternatives --install /usr/bin/javac javac /opt/jdk1.7.0_79/bin/javac 2
+# alternatives --set jar /opt/jdk1.7.0_79/bin/jar
+# alternatives --set javac /opt/jdk1.7.0_79/bin/javac 
+EOF
+}
+
+function list_time_zone() {
+printf "TIME ZONES available:\n"
+ls -al /usr/share/zoneinfo/
+cat<<'EOF'
+Please select the required time zone and give a soft link to 
+/etc/localtime
+ls -s /etc/localtime /usr/share/zoneinfo/UTC
+EOF
+}
+function maldet_install() {
+cd /opt
+wget http://www.rfxn.com/downloads/maldetect-current.tar.gz
+sudo tar -zxvf maldetect-current.tar.gz
+cd maldetect-1.4.2/
+./install.sh
+}
+function black_list() {
+var1="$1"
+var2="$(echo $var1 | awk -F. '{OFS=".";print $4,$3,$2,$1}')"
+black="$(echo -e "cbl.abuseat.org\ncidr.bl.mcafee.com\nspam.dnsbl.sorbs.net\nsbl-xbl.spamhaus.org\nzen.spamhaus.org\ndnsbl.dronebl.org\nb.barracudacentral.org")"
+for i in $(echo $black)
+do
+host -t A ${var2}.$i
+done | grep 127.0.0
+}
+function splunk_install() {
+cd /root/
+tar xvzf splunklight-6.2.3-264376-Linux-x86_64.tgz -C /opt
+echo "export SPLUNK_HOME=/opt/splunk" >> /root/.bashrc
+$SPLUNK_HOME/bin/splunk start --accept-license
+}
+
+function route_in_linux() {
+echo 1 > /proc/sys/net/ipv4/ip_forward
+/sbin/iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+/sbin/iptables -A FORWARD -i eth0 -o eth1 -m state  --state RELATED,ESTABLISHED -j ACCEPT
+/sbin/iptables -A FORWARD -i eth1 -o eth0 -j ACCEPT
+}
+
+function ec2_install() {
+sudo apt-add-repository ppa:awstools-dev/awstools
+sudo apt-get update
+sudo apt-get install ec2-api-tools ec2-ami-tools iamcli rdscli moncli ascli elasticache
+cat <<'EOF'
+AWSAccessKeyId=YOURACCESSKEYIDHERE
+AWSSecretKey=YOURPRIVATEACCESSKEYHERE
+EOF
+
+}
+
+function drbd_check() {
+cat <<'EOF'
+http://www.binbert.com/blog/2014/01/disaster-recovery-of-mysql-using-drbd-and-heartbeat/
+EOF
+
+}
+
+function csf_install() {
+cd /usr/local/src
+wget http://www.configserver.com/free/csf.tgz
+tar -xzf csf.tgz
+cd csf
+sh install.sh
+perl /usr/local/src/csf/bin/csftest.pl
+echo "configure /etc/csf/csf.conf"
+echo "Put overridding rules in /etc/csf/csfpre.sh"
+}
+
+function rkhunter_install() {
+cd /tmp
+wget https://sourceforge.net/projects/rkhunter/files/latest/download?source=files
+tar -zxvf rkhunter*
+cd rkhunter*
+./installer.sh --layout default --install
+/usr/local/bin/rkhunter --update
+/usr/local/bin/rkhunter --propupd
+
+}
+
+function replicate1_mysql() {
+cat<<'EOF'
+CREATE USER 'repl_joyious'@'localhost' IDENTIFIED BY 'joyious2012';
+grant all privileges on elegantra.* to repl_joyious@'192.168.36.36' identified by 'joyious2012';
+grant replication slave on elegantra.* to 'repl_joyious'@'192.168.36.36' identified by 'joyious2012';
+mysql> FLUSH TABLES WITH READ LOCK;
+mysql> FLUSH TABLES WITH READ LOCK;
+mysql> SET GLOBAL read_only = ON;
+SHOW MASTER STATUS
+SET GLOBAL read_only = OFF;
+UNLOCK TABLES;
+
+
+on slave
+CALL mysql.rds_set_external_master ('172.30.0.119', 3306,'repl_joyious', 'joyious2012', 'mysql-bin.000001', 537, 0); 
+CALL mysql.rds_start_replication; 
+
+
+
+
+db backup
+server configuration
+
+server-id = 1
+log_bin = /var/log/mysql/mysql-bin.log
+binlog-do-db = elegantra
+
+check binary logging enabled in server.
+SHOW VARIABLES LIKE 'log_bin';
+EOF
+}
+
+function replicate_mysql() {
+replicate1_mysql | sed -e "s/172.30.0.119/${1}/g" -e "s/elegantra/${2}/g" -e "s/repl_joyious/${3}/g" -e "s/joyious2012/${4}/g" \
+	-e "s/192.168.36.36/${5}/g"
+}
+function CA_SELF_SIGNED() {
+echo "https://help.github.com/enterprise/11.10.340/admin/articles/using-self-signed-ssl-certificates/"
+}
+
+function check_user_cron() {
+for i in $(cat /etc/passwd | awk -F ":" '{print $1}')
+do
+crontab -u $i -l
+done
+}
+function yum_security() {
+yum install yum-plugin-security
+cat<<'EOF'
+yum --security check-update
+EOF
+}
+
+#function sendmail_auth_relay() {
+#echo "AuthInfo:198.11.230.226 "U:test3@uvjtech.com" "P:poi123r4s1m#" "M:PLAIN"  >> /etc/mail/authinfo
+#define('SMART_HOST', '198.11.230.226')  
+#FEATURE('authinfo')
+#3. Update sendmail.cf and access.db files:   
+
+# cd /etc/mail  
+# m4 sendmail.mc >sendmail.cf  
+# makemap hash authinfo < authinfo 
+   
+
+ #  4. Reload or restart sendmail:  
+   # /etc/init.d/sendmail restart
+#}
+
+#function python_ini() {
+#echo -e "#!/usr/bin/python\n#Program $1" > $1.py
+#echo -e "if __name__ == '__main__':\n\tmain()" >> $1.py
+#chmod +x $1.py
+#}
+
+
+function vimrc_old() {
+echo -e ":set nows\n:set ai\n:set sw=4\n:set noexpandtab\n:set tabstop=8\n:set number\n:set nocompatible\n:set backspace=2" >> .vimrc
+}
+
+#function vim() {
+#:set nows
+#:set ai
+#:set sw=4
+#:set noexpandtab
+#:set tabstop=8
+#:set number
+#:set nocp
+#:set bs=2
+
+
+function link_list() {
+cat<<'EOF'
+http://www.if-not-true-then-false.com/2010/yum-history-list-info-summary-repeat-redo-undo-new/
+EOF
+}
+
+function ubuntu_repo() {
+sed -i -re 's/([a-z]{2}\.)?archive.ubuntu.com|security.ubuntu.com/old-releases.ubuntu.com/g' /etc/apt/sources.list
+}
+
+function skype_install() {
+sudo dpkg --add-architecture i386
+sudo apt-get install sni-qt:i386
+sudo apt-get install gdebi
+cd ~
+wget http://192.168.6.36/skype-ubuntu-precise_4.3.0.37-1_i386.deb
+gdebi skype-ubuntu-precise_4.3.0.37-1_i386.deb 
+}
+
+function install_chrome() {
+
+wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add - 
+sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
+sudo apt-get update 
+sudo apt-get install google-chrome-stable
+}
+
+function ansible_user() {
+ANUSER=${1:calpine}
+sudo useradd -d /home/${ANUSER} -s /bin/bash -m ${ANUSER};
+sudo su -c "echo -e \"password\npassword\" | passwd ${ANUSER}"
+sudo usermod -G sudo ${ANUSER}
+echo "User ${ANUSER} has been added"
+#sudo su -c "echo \${ANUSER}    ALL=(ALL:ALL) ALL\" >> /etc/sudoers"
+}
+
+function vijai_user() {
+ANUSER=${2:root}
+PASS=${1}
+sudo su -c "echo -e \"${PASS}\n${PASS}\" | passwd ${ANUSER}"
+exit
+}
+function make_proxy() {
+#ssh -N -D 5222 root@192.168.6.36
+export all_proxy=socks://localhost:5222
+export http_proxy=$all_proxy
+export https_proxy=$all_proxy
+export ftp_proxy=$all_proxy
+export rsync_proxy=$all_proxy
+export ALL_PROXY=$all_proxy
+export HTTP_PROXY=$all_proxy
+export HTTPS_PROXY=$all_proxy
+export FTP_PROXY=$all_proxy
+export RSYNC_PROXY=$all_proxy
+}
+
+function bit_buket() {
+cat<<'EOF'
+#!/usr/bin/env expect
+cd /var/www/bitbucket/githyp
+set password "*****"
+spawn /usr/bin/git pull
+expect "Password for 'https://GitHyp@bitbucket.org'"
+send "$password\r"
+EOF
+}
+
+function disk_space_check() {
+
+IP=$(wan_ip| awk '{print $2}');
+ for i in $(df -h | grep -v Use | awk '{print $5}'| cut -f 1 -d %);
+   do
+      if [[ $i -gt 5 ]]; then
+     	echo -e "`date`\n"server space in critical condition"\n`df -h`"| mail -s "size details $IP" ${1} ${2}
+	fi;
+   done
+
+  }
+
+
+
+function install_composer() {
+   sudo apt-get update
+   sudo apt-get install curl php5-cli git
+   curl -sS https://getcomposer.org/installer | sudo php -- --install-dir=/usr/local/bin --filename=composer
+   }
+
+function smtp_load() {
+cat<<'EOF'
+https://www.mkyong.com/python/how-do-send-email-in-python-via-smtplib/
+EOF
+}
+
+function srv_check() {
+echo "==========SRV XMPP CHECK============="
+host -t SRV _XMPP-SERVER._tcp.${1}
+echo "==========SRV SIP CHECK=============="
+host -t SRV _sipfederationtls._tcp.${1}
+}
+
+function read_edge() {
+    host -t SRV _sipfederationtls._tcp.${1} | egrep -q "has SRV record"
+    if [ $? -ne 0 ]
+    then
+    echo "Input Edge gateway"
+    read EDGE_GATEWAY
+    echo "Edge gateway server $EDGE_GATEWAY"
+    echo "" >/dev/tcp/${EDGE_GATEWAY}/5061  >/dev/null
+    	if [ $? -eq 0 ]
+    	then
+    	echo "port 5061 open for ${EDGE_GATEWAY}"
+    	else
+    	echo "port 5061 not open for ${EDGE_GATEWAY}"
+    	fi
+    fi
+
+}
+
+function srv_checker() {
+host -t A ${1} | egrep -q "not found:"
+[ $? -eq 0 ] &&   echo Failure 
+echo "===============SRV CHECKING=================="
+srv_check ${1}
+echo "==============PORT CHECKING XMPP=================="
+for XMPP_HOST in $(srv_check ${1} | grep -i _xmpp | awk '{print $8}')
+do
+echo "xmpp-server $XMPP_HOST"
+echo "" >/dev/tcp/${XMPP_HOST}/5269
+if [ $? -eq 0 ]
+then
+echo "port 5269 open for ${XMPP_HOST}"
+else 
+echo "port 5269 not open for ${XMPP_HOST}"
+fi
+done
+echo "==============PORT CHECKING SIP=================="
+for SIP_HOST in $(srv_check ${1} | grep -i _sipfed | awk '{print $8}')
+do
+echo "sip server $SIP_HOST"
+echo "" >/dev/tcp/${SIP_HOST}/5061
+if [ $? -eq 0 ]
+then
+echo "port 5061 open for ${SIP_HOST}"
+else 
+echo "port 5061 not open for ${SIP_HOST}"
+fi
+done
+NUM=$(host -t SRV _sipfederationtls._tcp.${1} | grep -i "has SRV record"| wc -l)
+if [ $NUM -eq 0 ]
+then
+read_edge ${1}
+fi
+
+}
+
+function nginx_cors_conf() {
+cat<<'EOF'
+     if ($request_method = 'OPTIONS') {
+        add_header 'Access-Control-Allow-Origin' '*';
+        #
+        # Om nom nom cookies
+        #
+        add_header 'Access-Control-Allow-Credentials' 'true';
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+        #
+        # Custom headers and headers various browsers *should* be OK with but aren't
+        #
+        add_header 'Access-Control-Allow-Headers' 'DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type';
+        #
+        # Tell client that this pre-flight info is valid for 20 days
+        #
+        add_header 'Access-Control-Max-Age' 1728000;
+        add_header 'Content-Type' 'text/plain charset=UTF-8';
+        add_header 'Content-Length' 0;
+        return 204;
+     }
+     if ($request_method = 'POST') {
+        add_header 'Access-Control-Allow-Origin' '*';
+        add_header 'Access-Control-Allow-Credentials' 'true';
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+        add_header 'Access-Control-Allow-Headers' 'DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type';
+     }
+     if ($request_method = 'GET') {
+        add_header 'Access-Control-Allow-Origin' '*';
+        add_header 'Access-Control-Allow-Credentials' 'true';
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+        add_header 'Access-Control-Allow-Headers' 'DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type';
+EOF
+     }
+
+function set_value(){
+        local variable="$1"
+        local value="$2"
+        local delimiter="$3"
+        local quote="${4:-\\\"}"
+        local config="$5"
+
+        grep -q "^[[:space:]]*$variable" $config
+        if [ $? -eq 0 ]; then
+                sed -i -e "s|^[[:space:]]*${variable}.*|${variable}${delimiter}${quote}${value}${quote}|g" $config
+                return 0
+        else
+                echo "${variable}${delimiter}${quote}${value}${quote}" >> $config
+        fi
+        return 0
+}
+
+function add_root_login_alert() {
+cat<<'EOF'
+echo 'ALERT - Root Shell Access (ServerName) on:' `date` `who` | mail -s "Alert: Root Access from `who | cut -d'(' -f2 | cut -d')' -f1`" your@yourdomain.com
+EOF
+}
+function docker_ubuntu16_install() {
+sudo apt-get update
+sudo apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D
+sudo apt-add-repository 'deb https://apt.dockerproject.org/repo ubuntu-xenial main'
+sudo apt-get update
+apt-cache policy docker-engine
+apt-get install docker-engine
+sudo systemctl status docker
+}
+function mysql_mysql_mig() {
+#mysqldump -u root -pPASSWORD --all-databases | ssh USER@NEW.HOST.COM 'cat - | mysql -u root -pPASSWORD'
+mysqldump -u root -p $1 | ssh $2 $3 "cat - | mysql -u root -p$4"
+}
+
+function bell_bcd() { 
+cat ${1} | xargs -I {} echo -e  "{}\tbcd"
+}
+function install_vnc() {
+sudo yum install -y tigervnc-server
+sudo systemctl status vncserver@:.service
+
+}
+function sshtunnel_setup() {
+echo -e "PermitRootLogin yes\nPasswordAuthentication yes\nX11Forwarding yes\n"
+}
+function tcp_portcheck() {
+</dev/tcp/${1}/${2} && echo Port is open || echo Port is closed
+}
+
+function san_checker() {
+openssl s_client -showcerts  -CAfile /etc/ssl/certs/ca-certificates.crt -connect ${1} 2> /dev/null | openssl x509 -noout -text | grep DNS | tr -s " " \
+ | tr "," "\n" | awk -F ":" '{print $2}'
+#openssl s_client -showcerts -connect ${1} 2>/dev/null | openssl x509 -noout -text | grep DNS:
+}
+
+BASHRC="wget http://198.11.230.226/toolR32/fun;bash --rcfile ./fun ;rm -rf fun;"
+
+function vara_user() {
+
+    sudo useradd -d /home/$1 -s /bin/bash -m $1;
+    sudo su -c "echo -e \"password\npassword\" | passwd $1";
+    sudo usermod -G developer $1
+
+}
+
+function con_file_format() {
+iconv -f iso8859-1 -t ASCII//TRANSLIT ${1} ${2}
+}
+function load_check() {
+cat<<'EOF'
+#!/bin/bash
+# Script to check load in the server and mail
+# Author : rasim
+# Date   : 2014-10-20
+EOF
+HOST=$(hostname -f)
+cd /tmp
+test -e /tmp/load-bounce.lck
+test $? -eq 0 && exit 0
+touch /tmp/load-bounce.lck
+if [ $(cat /proc/loadavg | cut -d "."  -f1) -ge 15 ]; then
+#/etc/init.d/httpd restart &>/dev/null 
+echo "Load is $(uptime| awk '{print $6,$7,$8,$9,$10,$11}')" | mail -s Problem-in-${HOST} ${1} ${2}
+else
+echo Nothing  >> /dev/null 2>&1
+fi
+rm -rf /tmp/load-bounce.lck
+}
+function b64decode() {
+    echo "$1" | base64 --decode; echo
+    }
+function ssh_for_single_user() {
+echo -e "Match User nextplane\n\tPasswordAuthentication yes" >> /etc/ssh/sshd_config
+}
+
+function AD_RESET() {
+cat<<'EOF'
+dsquery user -samid rasimuddin.vs | dsmod user -pwd <new-password>
+EOF
+}
+
+function disk_check() {
+time sh -c "dd if=/dev/zero of=ddfile bs=8k count=250000 && sync"
+hdparm -T /dev/sta2
+hdparm -t /dev/sta2 
+#-t for direct and -T for cached
+}
+function ram_check() {
+
+wget 103.26.43.131/sigtoolsR32/memtop-0.9.txt
+mv memtop-0.9.txt memtop-0.9.py
+chmod +x memtop-0.9.py
+python memtop-0.9.py
+free -m
+
+}
+
+function initial() {
+rm -rf ./fun;
+tail -20 /var/log/messages
+getip;
+myinfo;
+reboot_info;
+disk_info;
+selinux;
+wan_ip;
+netportcheck
+current_time;
+}
+
+rm -rf ./fun
+

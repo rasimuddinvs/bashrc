@@ -1,0 +1,72 @@
+#These are some of the enviornmental function i used to manage fortigate and routers
+function queryfor() {
+expect -c "spawn ssh rasim@192.168.60.254; set timeout 80;expect password: { send \"#123rasim*\\r\"};expect \"CSEZ-17A #\" {send \"$1 $2 $3 $4 $5 $6 $7 $8 $9 | grep -v #%\\r\"};expect \"CSEZ-17A #\" {send exit\\r}"
+}
+
+function router17() {
+expect -c 'spawn ssh rasim@192.168.60.254; set timeout 80;expect password: { send #123rasim*\r};interact'
+}
+
+function queryforinfo() {
+expect -c "spawn telnet 192.168.0.254; set timeout 80;expect login: {send rasim\\r};expect Password: { send \"#123rasim*\\r\"};expect \"Infopark-uvj #\" {send \"$1 $2 $3 $4 $5 $6 $7 $8 $9 | grep -v #%\\r\"};expect \"Infopark-uvj #\" {send exit\\r}"
+}
+
+function queryfor16() {
+expect -c "spawn ssh rasim@192.168.30.1; set timeout 80;expect password: { send \"#123rasim*\\r\"};expect \"CSEZ-16A #\" {send \"$1 $2 $3 $4 $5 $6 $7 $8 $9 | grep -v #%\\r\"};expect \"CSEZ-16A #\" {send exit\\r}"
+}
+
+function router16() {
+expect -c 'spawn ssh rasim@192.168.30.1; set timeout 80;expect password: { send #123rasim*\r};interact'
+}
+
+function routerinfo() {
+expect -c 'spawn telnet 192.168.0.254; set timeout 80;expect login: {send rasim\r};expect Password: { send #123rasim*\r};interact'
+}
+
+function querytest() {
+echo $1
+case "$1" in
+   delete)
+          expect -c "spawn ssh rasim@192.168.6.2; set timeout 80;expect password: { send \"#123rasim*\\r\"};expect \"CSEZ-17A #\" {send \"\config webfilter ftgd-local-rating\\r\"};expect \"(ftgd-local-rating) #\" {send \"delete $2\\r\"};expect # {send end\\r};expect # {send exit\\r}"
+           ;;
+    142|143|148) expect -c "spawn ssh rasim@192.168.6.2; set timeout 80;expect password: { send \"#123rasim*\\r\"};expect \"CSEZ-17A #\" {send \"\config webfilter ftgd-local-rating\\r\"};expect \"(ftgd-local-rating) #\" {send \"edit $2\\r\"};expect # { send \"set rating $1\\r\"};expect # {send end\\r};expect # {send exit\\r}"
+           ;;
+    unselect) expect -c "spawn ssh rasim@192.168.6.2; set timeout 80;expect password: { send \"#123rasim*\\r\"};expect \"CSEZ-17A #\" {send \"\config firewall addrgrp\\r\"};expect \"(addrgrp) #\" {send \"edit URL_auto_LDAP\\r\"};expect # { send \"unselect member $2\\r\"};expect # {send end\\r};expect # {send exit\\r}"
+	   ;;
+    append) expect -c "spawn ssh rasim@192.168.6.2; set timeout 80;expect password: { send \"#123rasim*\\r\"};expect \"CSEZ-17A #\" {send \"\config firewall addrgrp\\r\"};expect \"(addrgrp) #\" {send \"edit URL_auto_LDAP\\r\"};expect # { send \"append member $2\\r\"};expect # {send end\\r};expect # {send exit\\r}"
+    	   ;;
+    set) expect -c "spawn ssh rasim@192.168.6.2; set timeout 80;expect password: { send \"#123rasim*\\r\"};expect \"CSEZ-17A #\" {send \"\config firewall addrgrp\\r\"};expect \"(addrgrp) #\" {send \"edit URL_auto_LDAP\\r\"};expect # { send \"set member test_5\\r\"};expect # {send end\\r};expect # {send exit\\r}"
+    	   ;;
+        *) echo "Bad options"
+esac
+}
+
+function reset_temp_allow_web() {
+for i in $(queryfor "show webfilter ftgd-local-rating" | grep -B 1 148 | awk '/edit/{print $2}'| sed s_\"__g); do echo $i;querytest delete $i; done
+ }
+
+function reset_temp_allow_user() {
+queryfor "show firewall addrgrp URL_auto_LDAP" | sed s_\"__g | awk '/member/{print $1="";$2="";print}'
+querytest set test_5
+}
+
+function send_mail_fortinet() {
+
+su -lc "echo \"$@\" | mail -s test ithelp@calpinetech.com" fortinet
+}
+
+function user_add() {
+local var_ipaddr=$1;
+local i;
+for i in $(queryfor "show firewall address" | grep -w -B 1 $var_ipaddr | sed 's_\"__g'|awk '/edit/{print $2}')
+do
+querytest append $i;
+done
+echo "User added to Fortinet Temp_allow group tempararily"
+}
+function change_route_to_17() {
+expect -c 'spawn ssh 192.168.6.2 ;set timeout 180;expect Name: {send admin\r}; expect Password: {send password\r}; expect SW02# {send config\r};expect SW02 {send "ip route 0.0.0.0 0.0.0.0 192.168.1.201 metric 20\r"};expect SW02 {send exit\r};expect SW02 {send exit\r};interact'
+}
+function change_route_to_16() {
+expect -c 'spawn ssh 192.168.6.2 ;set timeout 180;expect Name: {send admin\r}; expect Password: {send password\r}; expect SW02# {send config\r};expect SW02 {send "ip route 0.0.0.0 0.0.0.0 192.168.1.201 metric 1\r"};expect SW02 {send exit\r};expect SW02 {send exit\r};interact'
+}
