@@ -1084,6 +1084,9 @@ function ssh_for_single_user() {
 echo -e "Match User nextplane\n\tPasswordAuthentication yes" >> /etc/ssh/sshd_config
 }
 
+dockerrepotag () {
+curl https://registry.hub.docker.com//v1/repositories/${1}/tags | python -mjson.tool
+}
 function AD_RESET() {
 cat<<'EOF'
 dsquery user -samid rasimuddin.vs | dsmod user -pwd <new-password>
