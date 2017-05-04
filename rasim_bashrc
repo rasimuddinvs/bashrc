@@ -825,16 +825,27 @@ sudo apt-get install google-chrome-stable
 }
 
 function ansible_user() {
-ANUSER=${1:calpine}
+ANUSER=${1:-ansible}
+python -mplatform | grep -qi Ubuntu && PLATFORM=ubuntu || PLATFORM=centos
+if [[ $PLATFORM == "ubuntu" ]] ;then
 sudo useradd -d /home/${ANUSER} -s /bin/bash -m ${ANUSER};
 sudo su -c "echo -e \"password\npassword\" | passwd ${ANUSER}"
 sudo usermod -G sudo ${ANUSER}
 echo "User ${ANUSER} has been added"
+
+elif [[ $PLATFORM == "centos" ]] ;then
+useradd -d /home/${ANUSER} -s /bin/bash -m ${ANUSER};
+su -c "echo -e \"password\npassword\" | passwd ${ANUSER}"
+usermod -G sudo ${ANUSER}
+echo "User ${ANUSER} has been added"
+
+fi
+
 #sudo su -c "echo \${ANUSER}    ALL=(ALL:ALL) ALL\" >> /etc/sudoers"
 }
 
 function vijai_user() {
-ANUSER=${2:root}
+ANUSER=${2:-root}
 PASS=${1}
 sudo su -c "echo -e \"${PASS}\n${PASS}\" | passwd ${ANUSER}"
 exit
