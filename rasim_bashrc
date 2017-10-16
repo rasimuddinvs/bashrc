@@ -169,9 +169,9 @@ FIRSTNAME="$(echo "$result" | awk '/first_name:/{print $2}')"
 EMAIL="$(echo "$result" | awk '/email:/{print $2}')"
 sleep 60
 
-expect -c "spawn ssh rasim@10.20.0.40 \"ls /home/ftpmaster/ftp/rasim/${FILENAME}.*\" ;set timeout 180;expect password: {send password\r};" || \
+expect -c "spawn ssh rasim@10.240.0.0 \"ls /home/ftpmaster/ftp/rasim/${FILENAME}.*\" ;set timeout 180;expect password: {send password\r};" || \
 	fail 1 "File not found"
-	#ssh sfranco@10.20.0.40 "ls /home/ftpmaster/ftp.agencourt.com/SFRANCO/${FILENAME}.*" || fail 1 "File not found"
+	#ssh sfro@10.240.0.0 "ls /home/ftpmaster/ftp.agencourt.com/SNCO/${FILENAME}.*" || fail 1 "File not found"
 	echo "Success"
 	mdb "UPDATE project_delivery_job SET package_complete = TRUE,end_date = now() WHERE project_id = $PROJECT_ID and delivery_id = $DELIVERY_ID"
 	pkill Xvfb
@@ -709,9 +709,9 @@ cd rkhunter*
 
 function replicate1_mysql() {
 cat<<'EOF'
-CREATE USER 'repl_joyious'@'localhost' IDENTIFIED BY 'joyious2012';
-grant all privileges on elegantra.* to repl_joyious@'192.168.36.36' identified by 'joyious2012';
-grant replication slave on elegantra.* to 'repl_joyious'@'192.168.36.36' identified by 'joyious2012';
+CREATE USER 'repl_jious'@'localhost' IDENTIFIED BY 'us2012';
+grant all privileges on elegantra.* to repl_yious@'192.168.36.36' identified by 'ious2012';
+grant replication slave on elegantra.* to 'repl_yious'@'192.168.36.36' identified by 'ious2012';
 mysql> FLUSH TABLES WITH READ LOCK;
 mysql> FLUSH TABLES WITH READ LOCK;
 mysql> SET GLOBAL read_only = ON;
@@ -721,7 +721,7 @@ UNLOCK TABLES;
 
 
 on slave
-CALL mysql.rds_set_external_master ('172.30.0.119', 3306,'repl_joyious', 'joyious2012', 'mysql-bin.000001', 537, 0); 
+CALL mysql.rds_set_external_master ('172.30.0.119', 3306,'repl_ious', 'ious2012', 'mysql-bin.000001', 537, 0); 
 CALL mysql.rds_start_replication; 
 
 
@@ -740,7 +740,7 @@ EOF
 }
 
 function replicate_mysql() {
-replicate1_mysql | sed -e "s/172.30.0.119/${1}/g" -e "s/elegantra/${2}/g" -e "s/repl_joyious/${3}/g" -e "s/joyious2012/${4}/g" \
+replicate1_mysql | sed -e "s/172.30.0.119/${1}/g" -e "s/elegantra/${2}/g" -e "s/reious/${3}/g" -e "s/us2012/${4}/g" \
 	-e "s/192.168.36.36/${5}/g"
 }
 function CA_SELF_SIGNED() {
@@ -761,8 +761,8 @@ EOF
 }
 
 #function sendmail_auth_relay() {
-#echo "AuthInfo:198.11.230.226 "U:test3@uvjtech.com" "P:poi123r4s1m#" "M:PLAIN"  >> /etc/mail/authinfo
-#define('SMART_HOST', '198.11.230.226')  
+#echo "AuthInfo:98.11.230.226 "U:test3@uvjtec.com" "P:tyfdytdy" "M:PLAIN"  >> /etc/mail/authinfo
+#define('SMART_HOST', '98.11.230.226')  
 #FEATURE('authinfo')
 #3. Update sendmail.cf and access.db files:   
 
